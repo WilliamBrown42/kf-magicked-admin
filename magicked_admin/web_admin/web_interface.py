@@ -20,25 +20,6 @@ MODE_SURVIVAL_VS = ""
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-'''
-'login': 'http://{0}/ServerAdmin/'
-'chat': 'http://{0}/ServerAdmin/current/chat+data'
- CURRENT GAME
-'info': 'http://{0}/ServerAdmin/current/info'
-'map': 'http://{0}/ServerAdmin/current/change'
-'players': 'http://{0}ServerAdmin/current/players'
- ACCESS POLICY
-'passwords': 'http://{0}/ServerAdmin/policy/passwords'
-'bans': 'http://{0}/ServerAdmin/policy/bans'
- SETTINGS
-'general_settings': 'http://{0}/ServerAdmin/settings/general'
-'game_type': 'http://{0}/ServerAdmin/settings/gametypes'
-'map_cycle': 'http://{0}/ServerAdmin/settings/maplist'
-'welcome': 'http://{0}/ServerAdmin/settings/welcome'
- MANAGEMENT CONSOLE
-'console': 'http://{0}/ServerAdmin/console
-'''
-
 
 class WebInterface(object):
     def __init__(self, address, username, password, multi_admin=False):
@@ -167,7 +148,7 @@ class WebInterface(object):
         }
 
         return self.__post(
-            self.__session,
+            self.__chat_session,
             self.__urls['chat'],
             payload,
             urgent
