@@ -18,7 +18,7 @@ MODE_WEEKLY = "KFGameContent.KFGameInfo_WeeklySurvival"
 MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class WebInterface(object):

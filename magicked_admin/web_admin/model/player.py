@@ -8,5 +8,3 @@ class Player(object):
         self.username = username
         self.perk = perk
         self.ping = 0
-
-        self.steam_id = ""
