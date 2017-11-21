@@ -13,9 +13,9 @@ LEN_SHORT = "0"
 LEN_NORM = "1"
 LEN_LONG = "2"
 
-MODE_SURVIVAL = ""
-MODE_WEEKLY = ""
-MODE_SURVIVAL_VS = ""
+MODE_SURVIVAL = "KFGameContent.KFGameInfo_Survival"
+MODE_WEEKLY = "KFGameContent.KFGameInfo_WeeklySurvival"
+MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -162,7 +162,7 @@ class WebInterface(object):
             urgent
         )
 
-    def get_info(self, urgent=False):
+    def get_server_info(self, urgent=False):
         return self.__get(
             self.__session,
             self.__urls['info'],
@@ -270,6 +270,14 @@ class WebInterface(object):
         return self.__post(
             self.__session,
             self.__urls['welcome'],
+            payload,
+            urgent
+        )
+
+    def post_welcome(self, payload, urgent=False):
+        return self.__post(
+            self.__session,
+            self.__urls['console'],
             payload,
             urgent
         )
