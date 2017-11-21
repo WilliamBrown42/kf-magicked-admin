@@ -14,10 +14,10 @@ class WebAdmin(object):
         self.__general_settings = self.general_settings()
         self.__motd_settings = self.motd_settings()
 
-        self.__game = Game()
-        self.__players = []
+        self.game = Game()
+        self.players = []
 
-        self.game_password = game_password
+        self.__game_password = game_password
 
         self.refresh_server_info()
 
@@ -74,7 +74,7 @@ class WebAdmin(object):
         }
 
     def refresh_server_info(self):
-        self.__players = []
+        self.players = []
 
         response = self.__web_interface.get_server_info()
         info_tree = html.fromstring(response.content)
@@ -109,7 +109,7 @@ class WebAdmin(object):
             player.dosh = int(dosh)
             player.ping = int(ping)
 
-            self.__players.append(player)
+            self.players.append(player)
 
     def __update_game(self, info_tree):
         zed_status_pattern = "//dd[@class=\"gs_wave\"]/text()"
@@ -118,12 +118,12 @@ class WebAdmin(object):
         zeds_dead, zeds_total = int(zeds_dead), int(zeds_total)
 
         if zeds_dead == zeds_total and zeds_total > 1:
-            self.__game.trader_open = True
+            self.game.trader_open = True
         else:
-            self.__game.trader_open = False
+            self.game.trader_open = False
 
-        self.__game.zeds_total = zeds_total
-        self.__game.zeds_dead = zeds_dead
+        self.game.zeds_total = zeds_total
+        self.game.zeds_dead = zeds_dead
 
         dds = info_tree.xpath('//dd/text()')
         game_type = info_tree.xpath('//dl//dd/@title')[0]
@@ -132,12 +132,12 @@ class WebAdmin(object):
         wave, length = dds[7].split("/")
         difficulty = dds[8]
 
-        self.__game.map_title = map_title
-        self.__game.map_name = map_name
-        self.__game.wave = wave
-        self.__game.length = length
-        self.__game.difficulty = difficulty
-        self.__game.game_type = game_type
+        self.game.map_title = map_title
+        self.game.map_name = map_name
+        self.game.wave = wave
+        self.game.length = length
+        self.game.difficulty = difficulty
+        self.game.game_type = game_type
 
     def __save_general_settings(self):
         self.__web_interface.post_general_settings(
@@ -166,14 +166,14 @@ class WebAdmin(object):
         return str_to_bool(password_state)
 
     def toggle_game_password(self):
-        if not self.game_password:
+        if not self.__game_password:
             return False
 
         if self.has_game_password():
             self.set_game_password("")
             return False
         else:
-            self.set_game_password(self.game_password)
+            self.set_game_password(self.__game_password)
             return True
 
     def set_length(self, length):
@@ -198,19 +198,19 @@ class WebAdmin(object):
 
     def set_map(self, new_map):
         payload = {
-            "gametype": self.__game.game_type,
+            "gametype": self.game.game_type,
             "map": new_map,
             "mutatorGroupCount": "0",
-            "urlextra": "?MaxPlayers=" + self.__game.max_players,
+            "urlextra": "?MaxPlayers=" + self.game.max_players,
             "action": "change"
         }
         self.__web_interface.post_map(payload)
 
     def restart_map(self):
-        self.set_map(self.__game.map_title)
+        self.set_map(self.game.map_title)
 
     def set_game_type(self, game_type):
-        self.__game.game_type = game_type
+        self.game.game_type = game_type
         self.restart_map()
 
     def activate_map_cycle(self, index):
@@ -233,6 +233,8 @@ class WebAdmin(object):
         self.__motd_settings["ServerMOTD"] = motd\
             .encode("iso-8859-1", "ignore")
         self.__web_interface.post_motd(self.__motd_settings)
+        # Setting the MOTD resets changes to general settings
+        self.__save_general_settings()
 
     def set_banner(self, banner_link):
         self.__motd_settings["BannerLink"] = banner_link
