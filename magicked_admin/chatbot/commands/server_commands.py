@@ -16,6 +16,7 @@ class CommandSay(Command):
         message = bytes(message.encode("iso-8859-1","ignore")).decode('unicode_escape')
         return message
 
+
 class CommandRestart(Command):
     def __init__(self, server, adminOnly = True):
         Command.__init__(self, server, adminOnly)
@@ -26,7 +27,8 @@ class CommandRestart(Command):
         
         self.server.restart_map()
         return "Restarting map."
-        
+
+
 class CommandTogglePassword(Command):
     def __init__(self, server, adminOnly = True):
         Command.__init__(self, server, adminOnly)
@@ -40,7 +42,8 @@ class CommandTogglePassword(Command):
             return "Game password enabled"
         else:
             return "Game password disabled"
-            
+
+
 class CommandSilent(Command):
     def __init__(self, server, chatbot, adminOnly = True):
         self.chatbot = chatbot
@@ -56,7 +59,8 @@ class CommandSilent(Command):
         else:
             self.chatbot.command_handler("server", "say Silent mode enabled.", admin=True)
             self.chatbot.silent = True
- 
+
+
 class CommandLength(Command):
     def __init__(self, server, adminOnly = True):
         Command.__init__(self, server, adminOnly)
@@ -78,7 +82,8 @@ class CommandLength(Command):
         
         self.server.set_length(length)
         return "Length change will take effect next game."
-        
+
+
 class CommandDifficulty(Command):
     def __init__(self, server, adminOnly = True):
         Command.__init__(self, server, adminOnly)

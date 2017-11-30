@@ -1,3 +1,5 @@
+from web_admin.model.map import Map
+
 
 class Game(object):
     def __init__(self):
@@ -16,3 +18,5 @@ class Game(object):
         self.trader_open = False
 
         self.max_players = 0
+
+        self.map = Map()

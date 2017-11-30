@@ -1,13 +1,16 @@
-from server.server import Server
-from server.managers.watchdog import Watchdog
-from server.managers.motd_updater import MotdUpdater
-from chatbot.chatbot import Chatbot
-from utils.text import str_to_bool
-
 import configparser
-import sys
-import signal
 import os
+import signal
+import sys
+
+from chatbot.chatbot import Chatbot
+from scripts.motd_updater import MotdUpdater
+from scripts.watchdog import Watchdog
+from web_admin.data_logger import DataLogger
+from web_admin.web_interface import WebInterface
+from web_admin.web_admin import WebAdmin
+
+from utils.text import str_to_bool
 
 DEBUG = True
 
@@ -37,13 +40,16 @@ class MagickedAdministrator():
             scoreboard_type = config[server_name]["scoreboard_type"]
             map_autochange = str_to_bool(config[server_name]["map_autochange"])
             multiadmin_enabled = str_to_bool(config[server_name]["multiadmin_enabled"])
-            
-            server = Server(server_name, address, user, password,
-                            game_password)
-            self.servers.append(server)
-			
+
+            web_interface = WebInterface(address, user, password,
+                                         str_to_bool(multiadmin_enabled))
+            web_admin = WebAdmin(web_interface, game_password)
+            '''server = Server(server_name, address, user, password,
+                            game_password, hashed=multiadmin_enabled)
+            self.servers.append(server)'''
+
             if map_autochange:
-                wd = Watchdog(server)
+                wd = Watchdog(web_interface)
                 wd.start()
                 self.watchdogs.append(wd)
                 

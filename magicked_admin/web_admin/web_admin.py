@@ -249,31 +249,3 @@ class WebAdmin(object):
         self.__motd_settings["WebLink"] = web_link
         self.__web_interface.post_motd(self.__motd_settings)
 
-    def get_player_details(self, username):
-        response = self.__web_interface.get_players()
-        player_tree = html.fromstring(response.content)
-
-        odds = player_tree.xpath('//tr[@class="odd"]//td/text()')
-        evens = player_tree.xpath('//tr[@class="even"]//td/text()')
-
-        player_rows = odds + evens
-
-        for player in player_rows:
-            if player[1] == username:
-                ip = player[3]
-                steam_id = player[5]
-                country, country_code = get_country(ip)
-                return {
-                    'steam_id': steam_id,
-                    'ip': ip,
-                    'country': country,
-                    'country_code': country_code
-                }
-
-        logger.warning("Country find player details for: {}".format(username))
-        return {
-                    'steam_id': "00000000000000000",
-                    'ip': "0.0.0.0",
-                    'country': "Unknown",
-                    'country_code': "??"
-                }
