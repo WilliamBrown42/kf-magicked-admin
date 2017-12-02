@@ -22,7 +22,8 @@ class Listener(object):
 
 
 class Chat(threading.Thread):
-    def __init__(self, web_interface, server_name="unnamed", time_interval=2):
+    def __init__(self, web_interface, operators=None,
+                 server_name="unnamed", time_interval=2):
 
         self.__web_interface = web_interface
         self.__time_interval = time_interval
@@ -33,6 +34,7 @@ class Chat(threading.Thread):
         self.__print_messages = True
         self.silent = False
         self.server_name = server_name
+        self.operators = operators if operators else []
 
         threading.Thread.__init__(self)
 
@@ -55,7 +57,9 @@ class Chat(threading.Thread):
                     user_type = message_tree.xpath(user_type_pattern)[0]
                     message = message_tree.xpath(message_pattern)[0]
 
-                    admin = True if "admin" in user_type else False
+                    admin = True if \
+                        "admin" in user_type or username in self.operators \
+                        else False
 
                     self.handle_message(username, message, admin)
 

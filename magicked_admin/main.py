@@ -22,7 +22,7 @@ config.read("./magicked_admin.conf")
 class MagickedAdministrator():
     
     def __init__(self):
-        self.servers = []
+        self.data_loggers = []
         self.chatbots = []
         self.watchdogs = []
         self.motd_updaters = []

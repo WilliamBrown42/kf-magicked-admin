@@ -76,6 +76,7 @@ class DataLogger(threading.Thread):
         self.game.difficulty = game_now.difficulty
         self.game.zeds_dead = game_now.zeds_dead
         self.game.zeds_total = game_now.zeds_total
+        self.game.game_type = game_now.game_type
 
     def __update_players(self, players_now):
         # Quitters
