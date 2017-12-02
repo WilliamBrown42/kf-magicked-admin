@@ -169,6 +169,13 @@ class WebInterface(object):
             urgent
         )
 
+    def get_map(self, urgent=False):
+        return self.__get(
+            self.__session,
+            self.__urls['map'],
+            urgent
+        )
+
     def post_map(self, payload, urgent=False):
         return self.__post(
             self.__session,
@@ -274,10 +281,85 @@ class WebInterface(object):
             urgent
         )
 
-    def post_welcome(self, payload, urgent=False):
+    def post_command(self, payload, urgent=False):
         return self.__post(
             self.__session,
             self.__urls['console'],
             payload,
             urgent
         )
+
+    def get_payload_general_settings(self):
+        response = self.get_general_settings()
+        general_settings_tree = html.fromstring(response.content)
+
+        settings_names = general_settings_tree.xpath('//input/@name')
+        settings_vals = general_settings_tree.xpath('//input/@value')
+
+        radio_settings_names = general_settings_tree.xpath(
+            '//input[@checked="checked"]/@name'
+        )
+        radio_settings_vals = general_settings_tree.xpath(
+            '//input[@checked="checked"]/@value'
+        )
+
+        length_val = general_settings_tree.xpath(
+            '//select[@id="settings_GameLength"]' +
+            '//option[@selected="selected"]/@value'
+        )[0]
+        difficulty_val = general_settings_tree.xpath(
+            '//input[@name="settings_GameDifficulty_raw"]/@value'
+        )[0]
+
+        settings = {'settings_GameLength': length_val,
+                    'settings_GameDifficulty': difficulty_val,
+                    'action': 'save'}
+
+        for i in range(0, len(settings_names)):
+            settings[settings_names[i]] = settings_vals[i]
+
+        for i in range(0, len(radio_settings_names)):
+            settings[radio_settings_names[i]] = radio_settings_vals[i]
+
+        return settings
+
+    def get_payload_motd_settings(self):
+        response = self.get_welcome()
+        motd_tree = html.fromstring(response.content)
+
+        banner_link = motd_tree.xpath('//input[@name="BannerLink"]/@value')[0]
+        web_link = motd_tree.xpath('//input[@name="WebLink"]/@value')[0]
+
+        return {
+            'BannerLink': banner_link,
+            'ClanMotto': '',
+            'ClanMottoColor': '#FF0000',
+            'ServerMOTDColor': '#FF0000',
+            'WebLink': web_link,
+            'WebLinkColor': '#FF0000',
+            'liveAdjust': '1',
+            'action': 'save'
+        }
+
+    def get_payload_map_settings(self):
+        response = self.get_map()
+        map_tree = html.fromstring(response.content)
+
+        game_type_pattern = "//select[@id=\"gametype\"]" \
+                            "//option[@selected=\"selected\"]/@value"
+        map_pattern = "//select[@id=\"map\"]" \
+                      "//option[@selected=\"selected\"]/@value"
+        url_extra_pattern = "//input[@id=\"urlextra\"]/@value"
+
+        game_type = map_tree.xpath(game_type_pattern)[0]
+        map_name = map_tree.xpath(map_pattern)[0]
+        url_extra = map_tree.xpath(url_extra_pattern)[0]
+        mutator_count = map_tree.xpath()[0]
+
+        return {
+            "gametype": game_type,
+            "map": map_name,
+            "mutatorGroupCount": mutator_count,
+            "urlextra": url_extra,
+            "action": "change"
+        }
