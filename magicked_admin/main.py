@@ -5,7 +5,6 @@ import sys
 
 from chatbot.chatbot import Chatbot
 from scripts.motd_updater import MotdUpdater
-from scripts.watchdog import Watchdog
 from web_admin.data_logger import DataLogger
 from web_admin.web_interface import WebInterface
 from web_admin.web_admin import WebAdmin
@@ -19,12 +18,12 @@ if not os.path.exists("./magicked_admin.conf"):
 config = configparser.ConfigParser()
 config.read("./magicked_admin.conf")
 
+
 class MagickedAdministrator():
     
     def __init__(self):
         self.data_loggers = []
         self.chatbots = []
-        self.watchdogs = []
         self.motd_updaters = []
         
         signal.signal(signal.SIGINT, self.terminate)
@@ -38,8 +37,13 @@ class MagickedAdministrator():
             game_password = config[server_name]["game_password"]
             motd_scoreboard = str_to_bool(config[server_name]["motd_scoreboard"])
             scoreboard_type = config[server_name]["scoreboard_type"]
-            map_autochange = str_to_bool(config[server_name]["map_autochange"])
+
             multiadmin_enabled = str_to_bool(config[server_name]["multiadmin_enabled"])
+
+            operators = config[server_name]["operators"]
+            operator_commands = config[server_name]["operator_commands"]
+            print(operators)
+            print(operator_commands)
 
             web_interface = WebInterface(address, user, password,
                                          str_to_bool(multiadmin_enabled))
@@ -47,11 +51,6 @@ class MagickedAdministrator():
             '''server = Server(server_name, address, user, password,
                             game_password, hashed=multiadmin_enabled)
             self.servers.append(server)'''
-
-            if map_autochange:
-                wd = Watchdog(web_interface)
-                wd.start()
-                self.watchdogs.append(wd)
                 
             if motd_scoreboard:
                 motd_updater = MotdUpdater(server, scoreboard_type)
@@ -70,10 +69,9 @@ class MagickedAdministrator():
             server.terminate()
         #for cb in self.chatbots:
         #    cb.terminate()
-        for wd in self.watchdogs:
-            wd.terminate()
         for motd_updater in self.motd_updaters:
             motd_updater.terminate()
+
 
 if __name__ == "__main__":
     application = MagickedAdministrator()

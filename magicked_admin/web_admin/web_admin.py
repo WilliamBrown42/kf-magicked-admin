@@ -36,6 +36,7 @@ class WebAdmin(object):
             'gamepw1': password,
             'gamepw2': password
         }
+        self.__game_password = password
         self.__web_interface.post_passwords(payload)
 
     def has_game_password(self):
@@ -49,6 +50,7 @@ class WebAdmin(object):
 
     def toggle_game_password(self):
         if not self.__game_password:
+            logger.info("Tried to toggle game password before setting value")
             return False
 
         if self.has_game_password():

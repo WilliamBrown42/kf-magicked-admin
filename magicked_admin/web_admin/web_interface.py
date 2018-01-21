@@ -69,6 +69,7 @@ class WebInterface(object):
         self.__timeout = 5
 
         self.__session = self.__new_session()
+        #
         self.__chat_session = self.__new_session()
 
     def __get(self, session, url, urgent=False):
