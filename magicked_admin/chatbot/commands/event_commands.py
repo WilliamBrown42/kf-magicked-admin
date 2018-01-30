@@ -5,7 +5,8 @@ import threading
 
 ALL_WAVES = 99
 
-class CommandOnWave():
+
+class CommandOnWave:
     
     def __init__(self, args, wave, length, chatbot):
         if wave > 0:
@@ -19,6 +20,7 @@ class CommandOnWave():
     def new_wave(self, wave):
         if wave == self.wave or self.wave == ALL_WAVES:
             self.chatbot.command_handler("server", self.args, admin=True)
+
 
 class CommandOnTime(threading.Thread):
 
@@ -36,13 +38,15 @@ class CommandOnTime(threading.Thread):
     def run(self):
         while not self.exit_flag.wait(self.time_interval):
             self.chatbot.command_handler("server", self.args, admin=True)
-        
+
+
 class CommandOnTimeManager(Command):
 
-    def __init__(self, server, chatbot, adminOnly = True):
+    def __init__(self, operator_list, chatbot, admin=True):
         self.command_threads = []
         self.chatbot = chatbot
-        Command.__init__(self, server, adminOnly)
+
+        Command.__init__(self, operator_list, admin)
     
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -70,11 +74,12 @@ class CommandOnTimeManager(Command):
         else:
             return "Nothing is running."
 
+
 class CommandOnWaveManager(Command):
-    def __init__(self, server, chatbot, adminOnly = True):
+    def __init__(self, server, chatbot, admin=True):
         self.commands = []
         self.chatbot = chatbot
-        Command.__init__(self, server, adminOnly)
+        Command.__init__(self, server, admin)
        
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -110,13 +115,14 @@ class CommandOnWaveManager(Command):
             
         self.commands.append(wc)
         return "Wave command started."
-        
+
+
 class CommandOnTraderManager(Command):
-    def __init__(self, server, chatbot, adminOnly = True):
+    def __init__(self, server, chatbot, admin=True):
         self.commands = []
         self.chatbot = chatbot
         
-        Command.__init__(self, server, adminOnly)
+        Command.__init__(self, server, admin)
         
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -142,4 +148,4 @@ class CommandOnTraderManager(Command):
     def start_command(self, args):
         self.commands.append(args)
         return "Trader command started."
-        
+

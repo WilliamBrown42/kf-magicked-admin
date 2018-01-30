@@ -1,19 +1,26 @@
 from os import path
 import threading
+from random import randint
 
 from utils.text import millify
 from utils.text import trim_string
 
+SCORE_TYPE_KILLS = "kills"
+SCORE_TYPE_DOSH = "dosh earned"
+SCORE_TYPE_RANDOM = "random"
+SCORE_TYPE_TIME = "time played"
+
 
 class MotdUpdater(threading.Thread):
 
-    def __init__(self, web_admin, data_logger, database):
+    def __init__(self, web_admin, motd_file, database,
+                 score_type=SCORE_TYPE_RANDOM):
         self.web_admin = web_admin
         self.database = database
-        self.data_logger = data_logger
 
         self.time_interval = 5 * 60
-        self.motd = self.load_motd()
+        self.motd = self.load_motd(motd_file)
+        self.score_type = score_type
 
         self.exit_flag = threading.Event()
 
@@ -27,18 +34,29 @@ class MotdUpdater(threading.Thread):
 
             self.web_admin.set_motd(motd)
 
-    def load_motd(self):
-        if not path.exists(self.server.name + ".motd"):
-            print("WARNING: No motd file for " + self.server.name)
+    @staticmethod
+    def load_motd(motd_file):
+        if not path.exists(motd_file):
+            print("WARNING: No such motd file: " + motd_file)
             return ""
  
-        motd_f = open(self.server.name + ".motd")
+        motd_f = open(motd_file)
         motd = motd_f.read()
         motd_f.close()
         return motd
 
     def render_motd(self, src_motd):
         scores = self.server.database.top_kills()
+
+        score_type = self.score_type
+        if score_type == SCORE_TYPE_RANDOM:
+            score_type = [
+                SCORE_TYPE_KILLS,
+                SCORE_TYPE_DOSH,
+                SCORE_TYPE_TIME
+            ][randint() % 3]
+
+        src_motd = src_motd.replace("%TYP", score_type, 1)
 
         for player in scores:
             name = player[0].replace("<","&lt;")

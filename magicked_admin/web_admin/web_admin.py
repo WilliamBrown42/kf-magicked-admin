@@ -6,6 +6,19 @@ from utils.text import str_to_bool
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+DIFF_NORM = "0.0000"
+DIFF_HARD = "1.0000"
+DIFF_SUI = "2.0000"
+DIFF_HOE = "4.0000"
+
+LEN_SHORT = "0"
+LEN_NORM = "1"
+LEN_LONG = "2"
+
+MODE_SURVIVAL = "KFGameContent.KFGameInfo_Survival"
+MODE_WEEKLY = "KFGameContent.KFGameInfo_WeeklySurvival"
+MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"
+
 
 class WebAdmin(object):
     def __init__(self, web_interface, game_password=None):

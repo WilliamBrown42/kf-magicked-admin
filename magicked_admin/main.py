@@ -4,12 +4,12 @@ import signal
 import sys
 
 from chatbot.chatbot import Chatbot
-from scripts.motd_updater import MotdUpdater
-from web_admin.data_logger import DataLogger
-from web_admin.web_interface import WebInterface
-from web_admin.web_admin import WebAdmin
-
+from server.motd_updater import MotdUpdater
 from utils.text import str_to_bool
+from web_admin.web_admin import WebAdmin
+from web_admin.web_interface import WebInterface
+
+from server.server import Server
 
 DEBUG = True
 
@@ -31,7 +31,10 @@ class MagickedAdministrator():
     def run(self):
 
         for server_name in config.sections():
-            address = config[server_name]["address"] 
+            config[server_name]["name"] = server_name
+            server = Server(config[server_name])
+            print(server.name)
+            '''address = config[server_name]["address"] 
             user = config[server_name]["username"]
             password = config[server_name]["password"]
             game_password = config[server_name]["game_password"]
@@ -48,9 +51,9 @@ class MagickedAdministrator():
             web_interface = WebInterface(address, user, password,
                                          str_to_bool(multiadmin_enabled))
             web_admin = WebAdmin(web_interface, game_password)
-            '''server = Server(server_name, address, user, password,
+            server = Server(server_name, address, user, password,
                             game_password, hashed=multiadmin_enabled)
-            self.servers.append(server)'''
+            self.servers.append(server)
                 
             if motd_scoreboard:
                 motd_updater = MotdUpdater(server, scoreboard_type)
@@ -59,8 +62,8 @@ class MagickedAdministrator():
 
             cb = Chatbot(server)
             server.chat.add_listener(cb)
-            self.chatbots.append(cb)
-			
+            self.chatbots.append(cb)'''
+
         print("INFO: Initialisation complete\n")
             
     def terminate(self, signal, frame):

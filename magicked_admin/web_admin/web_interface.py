@@ -4,7 +4,7 @@ from lxml import html
 import logging
 import time
 
-DIFF_NORM = "0.0000"
+'''DIFF_NORM = "0.0000"
 DIFF_HARD = "1.0000"
 DIFF_SUI = "2.0000"
 DIFF_HOE = "4.0000"
@@ -15,7 +15,7 @@ LEN_LONG = "2"
 
 MODE_SURVIVAL = "KFGameContent.KFGameInfo_Survival"
 MODE_WEEKLY = "KFGameContent.KFGameInfo_WeeklySurvival"
-MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"
+MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"'''
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -132,7 +132,7 @@ class WebInterface(object):
         }
 
         session = requests.Session()
-        login_page_response = self.__get(session, self.__urls['login]'])
+        login_page_response = self.__get(session, self.__urls['login'])
 
         login_page_tree = html.fromstring(login_page_response.content)
         token_pattern = "//input[@name='token']/@value"

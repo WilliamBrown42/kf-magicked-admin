@@ -1,28 +1,29 @@
-from web_admin.chat import Listener
-from chatbot.commands.command_map import CommandMap
+from web_admin.data_logger import Listener
 
 from os import path
 
 from utils.text import trim_string, millify
 
+
 class Chatbot(Listener):
     
-    def __init__(self, server):
-        self.server = server
-        self.chat = server.chat
-        # The in-game chat can fit 21 Ws horizontaly
+    def __init__(self, chat, command_map, name):
+        #self.server = server
+        self.name = name
+        self.chat = chat
+        self.command_map = command_map
+        # The in-game chat can fit 21 Ws horizontally
         self.word_wrap = 21
         self.max_lines = 7
-        
-        self.commands = CommandMap(server, self)
+
         self.silent = False
         
-        if path.exists(server.name + ".init"):
-            self.execute_script(server.name + ".init")
+        if path.exists(self.name + ".init"):
+            self.execute_script(self.name + ".init")
 
-        print("INFO: Bot on server " + server.name + " initialised")
+        print("INFO: Bot on server " + self.name + " initialised")
 
-    def recieveMessage(self, username, message, admin=False):
+    def receive_message(self, username, message, admin=False):
         if message[0] == '!':
             # Drop the '!' because its no longer relevant
             args = message[1:].split(' ')

@@ -1,9 +1,10 @@
 from chatbot.commands.command import Command
 import server.server as server
 
+
 class CommandSay(Command):
-    def __init__(self, server, adminOnly = True):
-        Command.__init__(self, server, adminOnly)
+    def __init__(self, operator_list, admin=True):
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -18,26 +19,30 @@ class CommandSay(Command):
 
 
 class CommandRestart(Command):
-    def __init__(self, server, adminOnly = True):
-        Command.__init__(self, server, adminOnly)
+    def __init__(self, operator_list, web_admin, admin=True):
+        self.web_admin = web_admin
+
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
             return self.not_auth_message
         
-        self.server.restart_map()
+        self.web_admin.restart_map()
         return "Restarting map."
 
 
 class CommandTogglePassword(Command):
-    def __init__(self, server, adminOnly = True):
-        Command.__init__(self, server, adminOnly)
+    def __init__(self, operator_list, web_admin, admin=True):
+        self.web_admin = web_admin
+
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
             return self.not_auth_message
         
-        new_state = self.server.toggle_game_password()
+        new_state = self.web_admin.toggle_game_password()
         if new_state:
             return "Game password enabled"
         else:
@@ -45,9 +50,10 @@ class CommandTogglePassword(Command):
 
 
 class CommandSilent(Command):
-    def __init__(self, server, chatbot, adminOnly = True):
+    def __init__(self, operator_list, chatbot, admin=True):
         self.chatbot = chatbot
-        Command.__init__(self, server, adminOnly)
+
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -62,8 +68,10 @@ class CommandSilent(Command):
 
 
 class CommandLength(Command):
-    def __init__(self, server, adminOnly = True):
-        Command.__init__(self, server, adminOnly)
+    def __init__(self, operator_list, web_admin, admin=True):
+        self.web_admin = web_admin
+
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -72,21 +80,23 @@ class CommandLength(Command):
             return "Length not recognised. Options are short, medium, or long."
         
         if args[1] == "short":
-            length = server.LEN_SHORT
+            length = self.web_admin.LEN_SHORT
         elif args[1] == "medium":
-            length = server.LEN_NORM
+            length = self.web_admin.LEN_NORM
         elif args[1] == "long":
-            length = server.LEN_LONG
+            length = self.web_admin.LEN_LONG
         else:
             return "Length not recognised. Options are short, medium, or long."
         
-        self.server.set_length(length)
+        self.web_admin.set_length(length)
         return "Length change will take effect next game."
 
 
 class CommandDifficulty(Command):
-    def __init__(self, server, adminOnly = True):
-        Command.__init__(self, server, adminOnly)
+    def __init__(self, operator_list, web_admin, admin=True):
+        self.web_admin = web_admin
+
+        Command.__init__(self, operator_list, admin)
 
     def execute(self, username, args, admin):
         if not self.authorise(admin):
@@ -95,13 +105,13 @@ class CommandDifficulty(Command):
             return "Difficulty not recognised. Options are normal, hard, suicidal, or hell."
         
         if args[1] == "normal":
-            difficulty = server.DIFF_NORM
+            difficulty = self.web_admin.DIFF_NORM
         elif args[1] == "hard":
-            difficulty = server.DIFF_HARD
+            difficulty = self.web_admin.DIFF_HARD
         elif args[1] == "suicidal":
-            difficulty = server.DIFF_SUI
+            difficulty = self.web_admin.DIFF_SUI
         elif args[1] == "hell":
-            difficulty = server.DIFF_HOE
+            difficulty = self.web_admin.DIFF_HOE
         else:
             return "Difficulty not recognised. Options are normal, hard, suicidal, or hell."
         
