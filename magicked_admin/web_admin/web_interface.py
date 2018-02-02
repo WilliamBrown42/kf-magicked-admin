@@ -69,7 +69,7 @@ class WebInterface(object):
         self.__timeout = 5
 
         self.__session = self.__new_session()
-        #
+
         self.__chat_session = self.__new_session()
 
     def __get(self, session, url, urgent=False):
@@ -351,11 +351,12 @@ class WebInterface(object):
         map_pattern = "//select[@id=\"map\"]" \
                       "//option[@selected=\"selected\"]/@value"
         url_extra_pattern = "//input[@id=\"urlextra\"]/@value"
+        mutator_count_pattern = "//input[@name=\"mutatorGroupCount\"]/@value"
 
         game_type = map_tree.xpath(game_type_pattern)[0]
         map_name = map_tree.xpath(map_pattern)[0]
         url_extra = map_tree.xpath(url_extra_pattern)[0]
-        mutator_count = map_tree.xpath()[0]
+        mutator_count = map_tree.xpath(mutator_count_pattern)[0]
 
         return {
             "gametype": game_type,

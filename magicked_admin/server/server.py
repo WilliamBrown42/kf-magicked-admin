@@ -1,4 +1,7 @@
+import threading
+
 from chatbot.chatbot import Chatbot
+from chatbot.commands.command_map import build_command_map
 
 from web_admin.web_admin import WebAdmin
 from web_admin.web_interface import WebInterface
@@ -6,54 +9,69 @@ from web_admin.chat import Chat
 from web_admin.data_logger import DataLogger
 
 from database.controller import DatabaseController
+from database.queries import DatabaseQueries
 
 from utils.text import str_to_bool
 
 
-class Server:
+class Server(threading.Thread):
 
     def __init__(self, config):
-        self.name = config["name"]
-        self.address = config["address"]
-        self.username = config["username"]
-        self.password = config["password"]
-        self.game_password = config["game_password"]
-        self.motd_scoreboard = str_to_bool(
-            config["motd_scoreboard"]
-        )
-        self.multiadmin_enabled = str_to_bool(
+        threading.Thread.__init__(self)
+
+        self.config = config
+
+        multiadmin_enabled = str_to_bool(
             config["multiadmin_enabled"]
         )
-        self.chat_refresh_rate = config["chat_refresh_rate"]
-        self.info_refresh_rate = config["info_refresh_rate"]
-        self.logger_refresh = config["logger_refresh"]
-
-        self.operators = config["operators"].strip().split("\n")
-        self.operator_commands = config["operator_commands"].strip().split("\n")
-        print(self.operators)
-        print(self.operator_commands)
+        motd_scoreboard = str_to_bool(
+            config["motd_scoreboard"]
+        )
+        self.operators = \
+            config["operators"].strip().split("\n")
+        self.operator_commands = \
+            config["operator_commands"].strip().split("\n")
+        self.help_text = \
+            config["help_text"]
 
         web_interface = WebInterface(
-            self.address,
-            self.username,
-            self.password,
-            self.multiadmin_enabled
+            config["address"],
+            config["username"],
+            config["password"],
+            multiadmin_enabled
         )
+        self.web_admin = WebAdmin(web_interface, config["game_password"])
 
-        self.web_admin = WebAdmin(
-            web_interface,
-            self.game_password
-        )
-
-        chat = Chat(
+        self.chat = Chat(
             web_interface,
             operators=self.operators,
-            server_name=self.name,
-            time_interval=self.chat_refresh_rate
+            server_name=config["name"]
         )
+        chatbot = Chatbot(self.chat, config["address"] + "@" + config["name"])
+        self.chat.add_listener(chatbot)
 
-        self.chatbot = Chatbot(chat, self)
+        self.database_controller = DatabaseController(config["name"])
+        self.database_queries = DatabaseQueries(self.database_controller.cur)
 
-        self.database_controller = DatabaseController(self.name)
-        self.data_logger = DataLogger(web_interface, DatabaseController,
-                                      self.logger_refresh)
+        self.data_logger = DataLogger(web_interface, self.database_controller)
+        self.data_logger.add_listener(chatbot)
+
+        # Could be detached from server by passing in op list
+        commands = build_command_map(
+            self,
+            chatbot,
+            self.operator_commands
+        )
+        chatbot.set_commands(commands)
+
+        print("INFO: Initialising server " + config["name"] + " succeeded")
+        self.exit_flag = threading.Event()
+
+    def run(self):
+        while not self.exit_flag.wait(3):
+            self.chat.poll()
+            self.data_logger.poll()
+
+    def terminate(self):
+        self.exit_flag.set()
+        print("INFO: Terminating thread [server: " + self.config["name"] + "]")

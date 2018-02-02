@@ -1,4 +1,3 @@
-import threading
 import logging
 from itertools import groupby
 from collections import namedtuple
@@ -31,30 +30,25 @@ class Listener(object):
         raise NotImplementedError("Listener.recieveMessage() not implemented")
 
 
-class DataLogger(threading.Thread):
-    def __init__(self, web_interface, database_controller, time_interval=6):
+class DataLogger:
+    def __init__(self, web_interface, database_controller):
         self.__web_interface = web_interface
         self.__database = database_controller
 
-        self.time_interval = time_interval
         self.listeners = []
-        self.exit_flag = threading.Event()
 
         self.players = []
         self.game = Game()
 
-        threading.Thread.__init__(self)
+    def poll(self):
+        response = self.__web_interface.get_server_info()
+        info_tree = html.fromstring(response.content)
 
-    def run(self):
-        while not self.exit_flag.wait(self.time_interval):
-            response = self.__web_interface.get_server_info()
-            info_tree = html.fromstring(response.content)
+        players_now = self.__get_current_players(info_tree)
+        game_now = self.__get_current_game(info_tree)
 
-            players_now = self.__get_current_players(info_tree)
-            game_now = self.__get_current_game(info_tree)
-
-            self.__update_players(players_now)
-            self.__update_game(game_now)
+        self.__update_players(players_now)
+        self.__update_game(game_now)
 
     def __update_game(self, game_now):
         if game_now.wave < self.game.wave:
@@ -150,14 +144,14 @@ class DataLogger(threading.Thread):
         else:
             trader_open = False
 
-        zeds_total = zeds_total
-        zeds_dead = zeds_dead
+        zeds_total = int(zeds_total)
+        zeds_dead = int(zeds_dead)
 
         dds = info_tree.xpath('//dd/text()')
         game_type = info_tree.xpath('//dl//dd/@title')[0]
         map_title = info_tree.xpath('//dl//dd/@title')[1]
         map_name = dds[0]
-        wave, length = dds[7].split("/")
+        wave, length = [int(val) for val in dds[7].split("/")]
         difficulty = dds[8]
 
         return ConstGame(trader_open, zeds_total, zeds_dead, map_title,
@@ -202,7 +196,7 @@ class DataLogger(threading.Thread):
 
     def __send_message(self, message):
         for listener in self.listeners:
-            listener.recieve_message("%internal%", message, admin=True)
+            listener.receive_message("%internal%", message, admin=True)
 
     def write_players(self):
         for player in self.players:
@@ -237,6 +231,3 @@ class DataLogger(threading.Thread):
 
     def __event_failure(self):
         self.__send_message("!failure")
-
-    def terminate(self):
-        self.exit_flag.set()

@@ -1,5 +1,4 @@
 from chatbot.commands.command import Command
-import server.server as server
 
 
 class CommandSay(Command):

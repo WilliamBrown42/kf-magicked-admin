@@ -7,8 +7,9 @@ from utils.text import trim_string, millify
 
 class Chatbot(Listener):
     
-    def __init__(self, chat, command_map, name):
-        #self.server = server
+    def __init__(self, chat, name, command_map=None):
+        Listener.__init__(self)
+
         self.name = name
         self.chat = chat
         self.command_map = command_map
@@ -23,6 +24,9 @@ class Chatbot(Listener):
 
         print("INFO: Bot on server " + self.name + " initialised")
 
+    def set_commands(self, command_map):
+        self.command_map = command_map
+
     def receive_message(self, username, message, admin=False):
         if message[0] == '!':
             # Drop the '!' because its no longer relevant
@@ -30,14 +34,17 @@ class Chatbot(Listener):
             self.command_handler(username, args, admin)
 
     def command_handler(self, username, args, admin=False):
-        if args == None or len(args) == 0:
+        if args is None or len(args) == 0:
             return
-        if args[0] in self.commands.command_map:
-            command = self.commands.command_map[args[0]]
+
+        print("DEBUG: " + str(args))
+        if args[0] in self.command_map:
+            command = self.command_map[args[0]]
+
             response = command.execute(username, args, admin)
             if not self.silent:
                 self.chat.submit_message(response)
-        elif username != "server" and not self.silent:
+        elif username != "%internal%" and not self.silent:
             self.chat.submit_message("Sorry, I didn't understand that request.")
 
     def execute_script(self, file_name):
