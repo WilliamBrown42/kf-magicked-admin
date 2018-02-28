@@ -2,8 +2,9 @@ from web_admin.model.map import Map
 
 
 class Game(object):
-    def __init__(self):
-        self.game_type = ""
+    def __init__(self, game_id):
+        self.game_id = game_id
+        self.game_mode = ""
         self.difficulty = ""
 
         self.map_title = ""

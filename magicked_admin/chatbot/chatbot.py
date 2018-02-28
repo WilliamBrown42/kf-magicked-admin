@@ -38,6 +38,7 @@ class Chatbot(Listener):
             return
 
         print("DEBUG: " + str(args))
+
         if args[0] in self.command_map:
             command = self.command_map[args[0]]
 

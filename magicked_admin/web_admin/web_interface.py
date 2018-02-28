@@ -46,7 +46,7 @@ class WebInterface(object):
                 .format(address),
             'map': 'http://{0}/ServerAdmin/current/change'
                 .format(address),
-            'players': 'http://{0}ServerAdmin/current/players'
+            'players': 'http://{0}/ServerAdmin/current/players'
                 .format(address),
             'passwords': 'http://{0}/ServerAdmin/policy/passwords'
                 .format(address),

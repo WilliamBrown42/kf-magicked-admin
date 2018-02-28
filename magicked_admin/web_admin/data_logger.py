@@ -38,7 +38,9 @@ class DataLogger:
         self.listeners = []
 
         self.players = []
-        self.game = Game()
+
+        # map, difficulty, mode,
+        self.game = Game(self.__database.open_game)
 
     def poll(self):
         response = self.__web_interface.get_server_info()
@@ -87,17 +89,16 @@ class DataLogger:
             player_now = next(filter(
                 lambda p: p.username == player.username, players_now
             ))
+            player.kills = player_now.kills
+            player.health = player_now.health
+            player.ping = player_now.ping
 
             player.perk = player_now.perk
             player.total_kills += player_now.kills - player.kills
+
             player.wave_kills += player_now.kills - player.kills
             player.wave_dosh += player_now.dosh - player.dosh
-            player.kills = player_now.kills
-            if player_now.health < player.health:
-                player.total_health_lost += \
-                    player.health - player_now.health
-            player.health = player_now.health
-            player.ping = player_now.ping
+
             if player_now.dosh > player.dosh:
                 player.game_dosh += player_now.dosh - player.dosh
                 player.total_dosh += player_now.dosh - player.dosh
@@ -171,10 +172,15 @@ class DataLogger:
 
         player_rows = odds + evens
 
+        player_rows = [list(group) for k, group in
+                       groupby(player_rows, lambda x: x == "\xa0") if not k]
+
+        print(str(player_rows))
+
         for player in player_rows:
-            if player[1] == username:
-                ip = player[3]
-                steam_id = player[5]
+            if player[0] == username:
+                ip = player[2]
+                steam_id = player[4]
                 country, country_code = get_country(ip)
                 return {
                     'steam_id': steam_id,
@@ -183,7 +189,7 @@ class DataLogger:
                     'country_code': country_code
                 }
 
-        logger.warning("Country find player details for: {}".format(username))
+        logger.warning("Couldn't find player details for: {}".format(username))
         return {
                     'steam_id': "00000000000000000",
                     'ip': "0.0.0.0",
@@ -195,6 +201,7 @@ class DataLogger:
         self.listeners.append(listener)
 
     def __send_message(self, message):
+        print("DATA_LOGGER_MESG: " + message)
         for listener in self.listeners:
             listener.receive_message("%internal%", message, admin=True)
 
@@ -209,9 +216,22 @@ class DataLogger:
         self.__send_message("!wave_start")
 
     def __event_new_game(self):
+        self.__database.close_game(self.game)
+        self.game.game_id = self.__database.open_game(self.game)
         self.__send_message("!new_game")
 
     def __event_player_join(self, player):
+        player_details = self.get_player_details(player.username)
+
+        new_player = Player(
+            player_details["steam_id"],
+            player_details["country_code"],
+            player_details["ip"],
+            player.username)
+
+        self.players.append(new_player)
+        self.__database.open_session(new_player, self.game)
+
         self.__send_message("!player_join " + player.username)
 
     def __event_player_death(self, player):

@@ -9,7 +9,7 @@ logger.setLevel(logging.INFO)
 DIFF_NORM = "0.0000"
 DIFF_HARD = "1.0000"
 DIFF_SUI = "2.0000"
-DIFF_HOE = "4.0000"
+DIFF_HOE = "3.0000"
 
 LEN_SHORT = "0"
 LEN_NORM = "1"
