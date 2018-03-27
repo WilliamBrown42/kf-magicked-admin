@@ -4,6 +4,7 @@ import signal
 import sys
 
 from server.server import Server
+from utils.validation import validate_config
 
 DEBUG = True
 
@@ -11,6 +12,9 @@ if not os.path.exists("./magicked_admin.conf"):
     sys.exit("Configuration file not found.")
 config = configparser.ConfigParser()
 config.read("./magicked_admin.conf")
+
+if not validate_config(config):
+    sys.exit()
 
 
 class MagickedAdministrator:
@@ -28,7 +32,7 @@ class MagickedAdministrator:
             server.start()
 
         print("INFO: All Servers started\n")
-            
+
     def terminate(self, signal, frame):
         print("\nINFO: Terminating...")
         for server in self.servers:
