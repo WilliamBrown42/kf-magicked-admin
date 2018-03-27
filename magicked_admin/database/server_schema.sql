@@ -1,7 +1,7 @@
 CREATE TABLE player(
     steam_id CHAR(17) PRIMARY KEY, -- Unique 17 Char steam id
     username VARCHAR(32), -- Steam permits up to 32 characters in username
-    country_code CHAR(2), -- ISO ALPHA-2 Code
+    country_code CHAR(2) -- ISO ALPHA-2 Code
 );
 
 CREATE TABLE map(
@@ -16,7 +16,7 @@ CREATE TABLE game(
     map_id INTEGER,
     game_mode VARCHAR(64),
     difficulty VARCHAR(64),
-    length INTEGER,
+    game_length INTEGER,
     date_start VARCHAR(32) NOT NULL,
     date_end VARCHAR(32)
 );
