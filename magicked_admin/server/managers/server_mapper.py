@@ -9,7 +9,8 @@ from termcolor import colored
 from server.player import Player
 from utils.logger import logger
 
-
+from itertools import groupby
+from utils.geolocation import get_country
 
 class ServerMapper(threading.Thread):
     def __init__(self, server):
@@ -114,6 +115,13 @@ class ServerMapper(threading.Thread):
                 player.kills = new_kills
                 player.health = new_health
                 player.dosh = new_dosh
+
+                detail = self.get_player_details(player.username)
+                player.country = detail["country"]
+                player.country_code = detail["country_code"]
+                player.ip = detail["ip"]
+                player.sid = detail["steam_id"]
+
                 self.server.player_join(player)
                 continue
 
@@ -185,6 +193,42 @@ class ServerMapper(threading.Thread):
         elif int(wave) > self.last_wave:
             self.server.new_wave()
         self.last_wave = int(wave)
+
+    def get_player_details(self, username):
+        response = self.server.session\
+            .get("http://{0}/ServerAdmin/current/players"
+                 .format(self.server.address))
+
+        player_tree = html.fromstring(response.content)
+
+        odds = player_tree.xpath('//tr[@class="odd"]//td/text()')
+        evens = player_tree.xpath('//tr[@class="even"]//td/text()')
+
+        player_rows = odds + evens
+
+        player_rows = [list(group) for k, group in
+                       groupby(player_rows, lambda x: x == "\xa0") if not k]
+
+        for player in player_rows:
+            if player[0] == username:
+                ip = player[2]
+                steam_id = player[4]
+                country, country_code = get_country(ip)
+                return {
+                    'steam_id': steam_id,
+                    'ip': ip,
+                    'country': country,
+                    'country_code': country_code
+                }
+
+        logger.warning("Couldn't find player details for: {}".format(username))
+        return {
+            'steam_id': "00000000000000000",
+            'ip': "0.0.0.0",
+            'country': "Unknown",
+            'country_code': "??"
+        }
+
 
     def run(self):
         while True:
