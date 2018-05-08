@@ -44,12 +44,13 @@ class MagickedAdministrator:
                 config[server_name]["motd_scoreboard"]
             )
             scoreboard_type = config[server_name]["scoreboard_type"]
+            level_threshhold = config[server_name]["level_threshhold"]
             enable_greeter = str_to_bool(
                 config[server_name]["enable_greeter"]
             )
 
             server = Server(server_name, address, user, password,
-                            game_password)
+                            game_password, level_threshhold)
             self.servers.append(server)
                 
             if motd_scoreboard:
