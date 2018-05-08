@@ -28,6 +28,7 @@ class CommandMap:
             'stop_trc': trader_event_manager,
             't_close': trader_event_manager,
             't_open': trader_event_manager,
+            'enforce_levels': CommandEnforceLevels(self.server),
             'say': CommandSay(self.server),
             'restart': CommandRestart(self.server),
             'load_map': CommandLoadMap(self.server),
