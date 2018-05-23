@@ -19,7 +19,8 @@ from server.game_map import GameMap
 
 class Server:
     def __init__(self, name, address, username, password, game_password,
-                 max_players):
+                 max_players, level_threshhold=0):
+      
         self.name = name
         self.address = address
         self.max_players = max_players
@@ -42,6 +43,7 @@ class Server:
 
         self.trader_time = False
         self.players = []
+        self.level_threshhold = level_threshhold
 
         self.chat = ChatLogger(self)
         self.chat.start()
@@ -185,7 +187,8 @@ class Server:
         self.database.load_player(player)
         player.total_logins += 1
         self.players.append(player)
-        message = "Player {} joined {}".format(player.username, self.name)
+        message = "Player {} joined {} from {}"\
+            .format(player.username, self.name, player.country)
         print(colored(message, 'cyan'))
         self.chat.handle_message("server",
                                  "!player_join " + player.username,
@@ -331,6 +334,31 @@ class Server:
             logger.warning("Couldn't set map on {} (RequestException)"
                            .format(self.name))
             sleep(3)
+
+    def enforce_levels(self):
+        for player in self.players:
+            if player.perk_level < self.level_threshhold:
+                # Might just toss only key/id and the username for message
+                self.kick_player(player.sid, player.id, player.key)
+
+    # User player id and key are done just Need to fix the request 
+    def kick_player(self, sid, player_id, player_key):
+        kick_url = "http://" + self.address + "/ServerAdmin/current/players"
+        payload = {
+            "playerid": player_id,
+            "playerkey": player_key,
+            "action": "kick"
+        }
+
+        try:
+            self.session.post(kick_url, payload)
+        except requests.exceptions.RequestException:
+            logger.warning("Couldn't kick player {} (RequestException)"
+                           .format(sid))
+            sleep(3)
+
+        print("REMOVED {}".format(sid))
+        return
 
     def restart_map(self):
         self.change_map(self.game.game_map.title)
