@@ -23,12 +23,12 @@ config = configparser.ConfigParser()
 config.read("./magicked_admin.conf")
 
 class MagickedAdministrator:
-    
+
     def __init__(self):
         self.servers = []
         self.chatbots = []
         self.motd_updaters = []
-        
+
         signal.signal(signal.SIGINT, self.terminate)
 
     def run(self):
@@ -44,7 +44,7 @@ class MagickedAdministrator:
                 config[server_name]["motd_scoreboard"]
             )
             scoreboard_type = config[server_name]["scoreboard_type"]
-            level_threshhold = config[server_name]["level_threshhold"]
+            level_threshhold = config[server_name]["level_threshold"]
             enable_greeter = str_to_bool(
                 config[server_name]["enable_greeter"]
             )
@@ -52,7 +52,7 @@ class MagickedAdministrator:
             server = Server(server_name, address, user, password,
                             game_password, level_threshhold)
             self.servers.append(server)
-                
+
             if motd_scoreboard:
                 motd_updater = MotdUpdater(server, scoreboard_type)
                 motd_updater.start()
@@ -63,7 +63,7 @@ class MagickedAdministrator:
             self.chatbots.append(cb)
 
         print("Initialisation complete")
-            
+
     def terminate(self, signal, frame):
         print("Terminating, saving data...")
         for server in self.servers:
@@ -79,4 +79,3 @@ if __name__ == "__main__":
     application.run()
 
     sys.exit(0)
-

@@ -121,6 +121,8 @@ class ServerMapper(threading.Thread):
                 player.country_code = detail["country_code"]
                 player.ip = detail["ip"]
                 player.sid = detail["steam_id"]
+                player.id = detail["player_id"]
+                player.key = detail["player_key"]
 
                 self.server.player_join(player)
                 continue
@@ -201,8 +203,9 @@ class ServerMapper(threading.Thread):
 
         player_tree = html.fromstring(response.content)
 
-        odds = player_tree.xpath('//tr[@class="odd"]//td/text()')
-        evens = player_tree.xpath('//tr[@class="even"]//td/text()')
+
+        odds = player_tree.xpath('//tr[@class="odd"]//td/text() | //tr[@class="odd"]/td/form/div/input/@value')
+        evens =  player_tree.xpath('//tr[@class="even"]//td/text() | //tr[@class="even"]/td/form/div/input/@value')
 
         player_rows = odds + evens
 
@@ -210,12 +213,43 @@ class ServerMapper(threading.Thread):
                        groupby(player_rows, lambda x: x == "\xa0") if not k]
 
         for player in player_rows:
-            if player[0] == username:
-                ip = player[2]
-                steam_id = player[4]
+            # This addition to the if statement is to deal with the level addition 
+            # This is the best fix I could think of because the netid's always start with 0x
+            # Still needs to be tested on a server that does not have the levvels added.
+            if player[0] == username and player[4].startswith('0x'):
+                logger.debug("USERNAME: {}".format(player[0]))
+                ip = player[4]
+                logger.debug("IP: {}".format(player[3]))
+                player_id =  player[10]
+                logger.debug("PLAYER ID: {}".format(player[9]))
+                player_key =  player[11]
+                logger.debug("PLAYER KEY: {}".format(player[10]))
+                steam_id = player[6]
+                logger.debug("STEAM ID: {}".format(player[5]))
                 country, country_code = get_country(ip)
                 return {
                     'steam_id': steam_id,
+                    'player_id': player_id,
+                    'player_key': player_key,
+                    'ip': ip,
+                    'country': country,
+                    'country_code': country_code
+                }
+            elif player[0] == username:
+                logger.debug("USERNAME: {}".format(player[0]))
+                ip = player[4]
+                logger.debug("IP: {}".format(player[4]))
+                player_id = player[10]
+                logger.debug("PLAYER ID:{}".format(player[10]))
+                player_key = player[11]
+                logger.debug("PLAYER KEY: {}".format(player[11]))
+                steam_id = player[6]
+                logger.debug("STEAM ID: {}".format(player[6]))
+                country, country_code = get_country(ip)
+                return {
+                    'steam_id': steam_id,
+                    'player_id': player_id,
+                    'player_key': player_key,
                     'ip': ip,
                     'country': country,
                     'country_code': country_code
@@ -224,11 +258,12 @@ class ServerMapper(threading.Thread):
         logger.warning("Couldn't find player details for: {}".format(username))
         return {
             'steam_id': "00000000000000000",
+            'player_id': "000",
+            'player_key': "000_0000000000000000_000.0000",
             'ip': "0.0.0.0",
             'country': "Unknown",
             'country_code': "??"
         }
-
 
     def run(self):
         while True:

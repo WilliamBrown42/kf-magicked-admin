@@ -289,10 +289,25 @@ class Server:
     def enforce_levels(self):
         for player in self.players:
             if player.perk_level < self.level_threshhold:
-                self.kick_player(player.sid)
+                # Might just toss only key/id and the username for message
+                self.kick_player(player.sid, player.id, player.key)
 
-    def kick_player(self, sid):
-        #TODO: Implement
+    # User player id and key are done just Need to fix the request 
+    def kick_player(self, sid, player_id, player_key):
+        kick_url = "http://" + self.address + "/ServerAdmin/current/players"
+        payload = {
+            "playerid": player_id,
+            "playerkey": player_key,
+            "action": "kick"
+        }
+
+        try:
+            self.session.post(kick_url, payload)
+        except requests.exceptions.RequestException:
+            logger.warning("Couldn't kick player {} (RequestException)"
+                           .format(sid))
+            sleep(3)
+
         print("REMOVED {}".format(sid))
         return
 

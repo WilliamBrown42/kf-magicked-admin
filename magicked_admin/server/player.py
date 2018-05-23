@@ -13,20 +13,22 @@ class Player:
         self.session_start = datetime.datetime.now()
 
         self.game_dosh = 0
-        
+
         self.wave_kills = 0
         self.wave_dosh = 0
-        
+
         self.kills = 0
         self.dosh = 0
         self.health = 0
-        
+
         self.username = username
         self.perk = perk
         self.perk_level = 99
         self.ping = 0
 
         self.sid = "00000000000000000"
+        self.id = "000"
+        self.key = "000_0000000000000000_000.0000"
         self.ip = "0.0.0.0"
         self.country = "Unknown"
         self.country_code = "??"
