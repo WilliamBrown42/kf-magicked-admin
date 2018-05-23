@@ -1,5 +1,6 @@
 import requests
 import sys
+import datetime
 
 from hashlib import sha1
 from lxml import html
@@ -11,21 +12,18 @@ from server.managers.server_mapper import ServerMapper
 from database.database import ServerDatabase
 from utils.logger import logger
 
-DIFF_NORM = "0.0000"
-DIFF_HARD = "1.0000"
-DIFF_SUI = "2.0000"
-DIFF_HOE = "3.0000"
-
-LEN_SHORT = "0"
-LEN_NORM = "1"
-LEN_LONG = "2"
+import server.game as game
+from server.game import Game
+from server.game_map import GameMap
 
 
 class Server:
     def __init__(self, name, address, username, password, game_password,
-                 level_threshhold=0):
+                 max_players, level_threshhold=0):
+      
         self.name = name
         self.address = address
+        self.max_players = max_players
         self.username = username
         self.password = password
         self.password_hash = "$sha1$" + \
@@ -35,19 +33,14 @@ class Server:
         self.game_password = game_password
 
         self.database = ServerDatabase(name)
-        print("Connecting to: {} ({})".format(self.name, self.address))
+        print("Connecting to: {} ({})...".format(self.name, self.address))
         self.session = self.new_session()
+        message = "Connected to: {} ({})".format(self.name, self.address)
+        print(colored(message, 'green'))
 
         self.general_settings = self.load_general_settings()
-        self.game = {
-            'map_title': 'kf-default',
-            'map_name': 'kf-default',
-            'wave': 0,
-            'length': 7,
-            'difficulty': 'normal'
-        }
-        self.zeds_killed = 0
-        self.zeds_wave = 0
+        self.game = Game(GameMap("kf-default"), game.MODE_SURVIVAL)
+
         self.trader_time = False
         self.players = []
         self.level_threshhold = level_threshhold
@@ -60,6 +53,7 @@ class Server:
 
         logger.debug("Server " + name + " initialised")
 
+    # This needs more clean naming? Check to see if it is fixed in other branches. 
     def new_session(self):
         login_url = "http://" + self.address + "/ServerAdmin/"
         login_payload = {
@@ -107,8 +101,10 @@ class Server:
         try:
             general_settings_response = self.session.get(general_settings_url)
         except requests.exceptions.RequestException as e:
-            logger.debug("Couldn't get settings " + self.name +
+            logger.warning("Couldn't get settings " + self.name +
                          " (RequestException), sleeping for 3s")
+            # This should retry, not continue to execute this function
+            # general_settings_response may be unassigned.
             sleep(3)
         general_settings_tree = html.fromstring(
             general_settings_response.content
@@ -141,8 +137,11 @@ class Server:
 
     def new_wave(self):
         self.chat.handle_message("server",
-                                 "!new_wave " + str(self.game['wave']),
+                                 "!new_wave " + str(self.game.wave),
                                  admin=True)
+
+        if int(self.game.wave) > int(self.game.game_map.highest_wave):
+            self.game.game_map.highest_wave = int(self.game.wave)
         for player in self.players:
             player.wave_kills = 0
             player.wave_dosh = 0
@@ -156,9 +155,26 @@ class Server:
         self.chat.handle_message("server", "!t_close", admin=True)
 
     def new_game(self):
-        message = "New game on {}, map: {}"\
-            .format(self.name, self.game['map_title'])
+        message = "New game on {}, map: {}, mode: {}"\
+            .format(self.name, self.game.game_map.title,
+                    self.game.gamemode)
         print(colored(message, 'magenta'))
+
+        self.database.load_game_map(self.game.game_map)
+
+        if self.game.gamemode == game.MODE_ENDLESS:
+            self.game.game_map.plays_endless += 1
+        elif self.game.gamemode == game.MODE_SURVIVAL:
+            self.game.game_map.plays_survival += 1
+        elif self.game.gamemode == game.MODE_SURVIVAL_VS:
+            self.game.game_map.plays_survival_vs += 1
+        elif self.game.gamemode == game.MODE_WEEKLY:
+            self.game.game_map.plays_weekly += 1
+        else:
+            logger.debug("Unknown gamemode {}".format(self.game.gamemode))
+            self.game.game_map.plays_other += 1
+
+
         self.chat.handle_message("server", "!new_game", admin=True)
 
     def get_player(self, username):
@@ -191,9 +207,13 @@ class Server:
                 self.players.remove(player)
 
     def write_all_players(self, final=False):
-        logger.debug("Flushing database ({})".format(self.name))
+        logger.debug("Flushing players ({})".format(self.name))
         for player in self.players:
             self.database.save_player(player, final)
+
+    def write_game_map(self):
+        logger.debug("Writing to database ({})".format(self.name))
+        self.database.save_game_map(self.game.game_map)
 
     def set_difficulty(self, difficulty):
         general_settings_url = "http://" + self.address + \
@@ -233,12 +253,44 @@ class Server:
                            "(RequestException)".format(self.name))
             sleep(3)
 
-    def toggle_game_password(self):
+    # Re-write this to be enable and disbale password, that way when disabling
+    # a password it will just straight up try and disable it and then when enabling it
+    # It will check to see if it is already enabled. Also might look at how to pass parms
+    # To this so that you can set a password not in the config.
+    # This will need to be corrected elsewhere when done.
+    def disable_password(self):
         passwords_url = "http://" + self.address + \
                         "/ServerAdmin/policy/passwords"
         payload = {
             'action': 'gamepassword'
         }
+
+        payload['gamepw1'] = ""
+        payload['gamepw2'] = ""
+
+        self.mapper.inactive_timer = False
+
+        try:
+            self.session.post(passwords_url, payload)
+        except requests.exceptions.RequestException:
+            logger.warning("Could not disable password on {} (RequestException)"
+                           .format(self.name))
+            sleep(3)
+            return False
+        return True
+
+    def enable_password(self, args):
+        passwords_url = "http://" + self.address + \
+                        "/ServerAdmin/policy/passwords"
+        payload = {
+            'action': 'gamepassword'
+        }
+
+        if args:
+            self.mapper.inactive_timer = True
+            self.mapper.inactive_time_start = datetime.datetime.now()
+        else:
+            self.mapper.inactive_timer = False
 
         try:
             passwords_response = self.session.get(passwords_url)
@@ -255,8 +307,7 @@ class Server:
             payload['gamepw1'] = self.game_password
             payload['gamepw2'] = self.game_password
         else:
-            payload['gamepw1'] = ""
-            payload['gamepw2'] = ""
+            return True
 
         try:
             self.session.post(passwords_url, payload)
@@ -264,10 +315,8 @@ class Server:
             logger.warning("Couldn't set password on {} (RequestException)"
                            .format(self.name))
             sleep(3)
-        if password_state == 'False':
-            return True
-        else:
             return False
+        return True
 
     def change_map(self, new_map):
         map_url = "http://" + self.address + "/ServerAdmin/current/change"
@@ -275,7 +324,7 @@ class Server:
             "gametype": "KFGameContent.KFGameInfo_Survival",
             "map": new_map,
             "mutatorGroupCount": "0",
-            "urlextra": "?MaxPlayers=6",
+            "urlextra": "?MaxPlayers={}".format(self.max_players),
             "action": "change"
         }
 
@@ -312,4 +361,4 @@ class Server:
         return
 
     def restart_map(self):
-        self.change_map(self.game['map_title'])
+        self.change_map(self.game.game_map.title)

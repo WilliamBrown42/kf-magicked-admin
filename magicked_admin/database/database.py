@@ -1,3 +1,5 @@
+# This file does not follow PEP8 style guidelines, instead a line length of 120 should be used
+
 import sqlite3
 import datetime
 from os import path
@@ -33,35 +35,48 @@ class ServerDatabase:
         conn.close()
 
     def rank_kills(self, username):
-        query = "select  p1.*"\
-                ",("" \
-                ""select  count(*)" \
-                "from    players as p2"" \
-                ""where   p2.kills > p1.kills"\
-                ") as kill_rank"" \
-                ""from    players as p1"" \
-                ""where   p1.username = ?"
+        subquery = "SELECT count(*) FROM players AS player2 WHERE player2.kills >= player1.kills"
+        query = "SELECT player1.*,({}) AS kill_rank FROM players AS player1 WHERE player1.username=?".format(subquery)
         lock.acquire(True)
         self.cur.execute(query, (username,))
         all_rows = self.cur.fetchall()
         lock.release()
-
         return all_rows[0][-1] + 1
 
     def rank_dosh(self, username):
-        query = "select  p1.*"\
-                ",("" \
-                ""select  count(*)" \
-                "from    players as p2"" \
-                ""where   p2.dosh > p1.dosh"\
-                ") as kill_rank"" \
-                ""from    players as p1"" \
-                ""where   p1.username = ?"
+        subquery = "SELECT count(*) FROM players as player2 WHERE player2.dosh >= player1.dosh"
+        query = "SELECT  player1.*,({}) AS dosh_rank FROM  players AS player1 WHERE player1.username=?".format(subquery)
         lock.acquire(True)
         self.cur.execute(query, (username,))
         all_rows = self.cur.fetchall()
         lock.release()
+        return all_rows[0][-1] + 1
 
+    def rank_death(self, username):
+        subquery = "SELECT count(*) FROM players as player2 WHERE player2.deaths <= player1.deaths"
+        query = "SELECT player1.*,({}) AS death_rank FROM  players AS player1 WHERE player1.username=?".format(subquery)
+        lock.acquire(True)
+        self.cur.execute(query, (username,))
+        all_rows = self.cur.fetchall()
+        lock.release()
+        return all_rows[0][-1] + 1
+
+    def rank_kd(self, username):
+        subquery = "SELECT count(*) FROM players as p2 WHERE p2.kills / p2.deaths >= p1.kills / p1.deaths"
+        query = "SELECT p1.*,({}) AS kd_rank FROM  players AS p1 WHERE player1.username=?".format(subquery)
+        lock.acquire(True)
+        self.cur.execute(query, (username,))
+        all_rows = self.cur.fetchall()
+        lock.release()
+        return all_rows[0][-1] + 1
+
+    def rank_time(self, username):
+        subquery = "SELECT count(*) FROM players as player2 WHERE player2.time_online >= player1.time_online"
+        query = "SELECT player1.*,({}) AS time_rank  FROM  players AS player1 WHERE p1.username=?".format(subquery)
+        lock.acquire(True)
+        self.cur.execute(query, (username,))
+        all_rows = self.cur.fetchall()
+        lock.release()
         return all_rows[0][-1] + 1
 
     # SUM(dosh_spent) Add in later.
@@ -80,6 +95,7 @@ class ServerDatabase:
         lock.acquire(True)
         self.cur.execute('SELECT SUM(kills) FROM players')
         all_rows = self.cur.fetchall()
+        lock.release
         # Errors out when you call it with 0 with "NoneType"
         if all_rows and all_rows[0][0]:
             return int(all_rows[0][0])
@@ -217,6 +233,65 @@ class ServerDatabase:
             lock.release()
 
         self.conn.commit()
+
+    def save_game_map(self, game_map):
+        lock.acquire(True)
+        self.cur.execute("INSERT OR IGNORE INTO maps (name, title) VALUES (?, ?)",
+                         (game_map.name, game_map.title))
+
+        self.cur.execute("UPDATE maps SET plays_survival = ? WHERE name = ?",
+                         (game_map.plays_survival, game_map.name))
+        self.cur.execute("UPDATE maps SET plays_survival_vs = ? WHERE name = ?",
+                         (game_map.plays_survival_vs, game_map.name))
+        self.cur.execute("UPDATE maps SET plays_weekly = ? WHERE name = ?",
+                         (game_map.plays_weekly, game_map.name))
+        self.cur.execute("UPDATE maps SET plays_endless = ? WHERE name = ?",
+                         (game_map.plays_endless, game_map.name))
+        self.cur.execute("UPDATE maps SET highest_wave = ? WHERE name = ?",
+                         (game_map.highest_wave, game_map.name))
+
+        lock.release()
+
+        self.conn.commit()
+
+    def load_game_map(self, game_map):
+        lock.acquire(True)
+
+        self.cur.execute("INSERT OR IGNORE INTO maps (name, title) VALUES (?, ?)",
+                         (game_map.name, game_map.title))
+
+        # TODO: Change all of these into a single query that returns a list
+        self.cur.execute('SELECT (plays_survival) FROM maps WHERE name=?',
+                         (game_map.name,))
+        plays_survival = int(self.cur.fetchall()[0][0])
+
+        self.cur.execute('SELECT (plays_survival_vs) FROM maps WHERE name=?',
+                         (game_map.name,))
+        plays_survival_vs = int(self.cur.fetchall()[0][0])
+
+        self.cur.execute('SELECT (plays_weekly) FROM maps WHERE name=?',
+                         (game_map.name,))
+        plays_weekly = int(self.cur.fetchall()[0][0])
+
+        self.cur.execute('SELECT (plays_endless) FROM maps WHERE name=?',
+                         (game_map.name,))
+        plays_endless = int(self.cur.fetchall()[0][0])
+
+        self.cur.execute('SELECT (plays_other) FROM maps WHERE name=?',
+                         (game_map.name,))
+        plays_other = int(self.cur.fetchall()[0][0])
+
+        self.cur.execute('SELECT (highest_wave) FROM maps WHERE name=?',
+                         (game_map.name,))
+        highest_wave = int(self.cur.fetchall()[0][0])
+        lock.release()
+
+        game_map.plays_survival = plays_survival
+        game_map.plays_survival_vs = plays_survival_vs
+        game_map.plays_weekly = plays_weekly
+        game_map.plays_endless = plays_endless
+        game_map.plays_other = plays_other
+        game_map.highest_wave = highest_wave
 
     def close(self):
         self.conn.commit()

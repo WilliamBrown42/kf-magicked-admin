@@ -1,6 +1,9 @@
 import datetime
 
 class Player:
+    """
+    Player class abstract
+    """
     def __init__(self, username, perk):
         self.total_deaths = 0
         self.total_kills = 0

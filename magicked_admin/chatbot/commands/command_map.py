@@ -11,6 +11,9 @@ class CommandMap:
         self.command_map = self.generate_map()
 
     def generate_map(self):
+        """
+        Generates the command mapping (key/value pairs) that are used by the (chat bot was it?)
+        """
         wave_event_manager = CommandOnWaveManager(self.server, self.chatbot)
         trader_event_manager = CommandOnTraderManager(self.server, self.chatbot)
         time_event_manager = CommandOnTimeManager(self.server, self.chatbot)
@@ -29,15 +32,20 @@ class CommandMap:
             't_close': trader_event_manager,
             't_open': trader_event_manager,
             'enforce_levels': CommandEnforceLevels(self.server),
+            'record_wave': CommandHighWave(self.server, admin_only=False),
             'say': CommandSay(self.server),
             'restart': CommandRestart(self.server),
             'load_map': CommandLoadMap(self.server),
-            'toggle_pass': CommandTogglePassword(self.server),
+            # Might give this a better name?
+            'pass': CommandEnablePassword(self.server),
+            'no_pass': commandDisablePassword(self.server),
             'silent': CommandSilent(self.server, self.chatbot),
+            'run': CommandRun(self.server, self.chatbot),
             'length': CommandLength(self.server),
             'difficulty': CommandDifficulty(self.server),
             'players': CommandPlayers(self.server, admin_only=False),
             'game': CommandGame(self.server, admin_only=False),
+            'map': CommandGameMap(self.server, admin_only=False),
             'help': CommandHelp(self.server, admin_only=False),
             'info': CommandInfo(self.server, admin_only=False),
             'kills': CommandKills(self.server, admin_only=False),

@@ -1,21 +1,28 @@
 import threading
 import requests
 import time
+import sys, os
+import datetime
 
 from lxml import html
 from lxml.html.clean import Cleaner
 from termcolor import colored
-
 from server.player import Player
 from utils.logger import logger
-
 from itertools import groupby
 from utils.geolocation import get_country
+from utils.time import seconds_to_hhmmss
 
 class ServerMapper(threading.Thread):
+    """
+    This class is responsible for gathering information from the web admin and
+    ... other stuffs.
+    """
     def __init__(self, server):
         self.server = server
-
+        self.inactive_time_start = datetime.datetime.now()
+        self.inactive_time = 0
+        self.inactive_timer = False
         self.time_interval = 6
         self.last_wave = 0
 
@@ -38,8 +45,22 @@ class ServerMapper(threading.Thread):
         info_tree = html.fromstring(info_page_response.content)
 
         headings, players_table = self.get_current_players(info_tree)
-        self.update_players(headings, players_table)
+        # This is working but can for sure be done better, look at it later.
+        if not players_table and self.inactive_time < 30:
+            now = datetime.datetime.now()
+            elapsed_time = now - self.inactive_time_start
+            self.inactive_time = elapsed_time.total_seconds()
+        elif not players_table and self.inactive_time > 30:
+            self.server.disable_password()
+            # This needs to be reset?
+            self.inactive_time_start = datetime.datetime.now()
+            self.inactive_time = 0
+            self.inactive_timer = False
+        else:
+            # Restart time if there are players?
+            self.inactive_time_start = datetime.datetime.now()
 
+        self.update_players(headings, players_table)
         self.update_game(info_tree)
 
     def get_current_players(self, info_tree):
@@ -162,8 +183,14 @@ class ServerMapper(threading.Thread):
     def update_game(self, info_tree):
         dds = info_tree.xpath('//dd/text()')
 
-        z, zr = info_tree.xpath('//dd[@class="gs_wave"]/text()')[0] \
-            .split("/")
+        try:
+            z, zr = info_tree.xpath('//dd[@class="gs_wave"]/text()')[0]\
+                .split("/")
+        except:
+            logger.error("Gamemode not supported without additional setup, "
+                         "see documentation. Skipping update for {}."
+                         .format(self.server.name))
+            return
         z, zr = int(z), int(zr)
         if z == zr and z > 1:
             # The if ensures trader_open is only sent once
@@ -184,11 +211,20 @@ class ServerMapper(threading.Thread):
             wave, length = dds[8].split("/")
             difficulty = dds[9]
 
-        self.server.game['map_title'] = map_title
-        self.server.game['map_name'] = map_name
-        self.server.game['wave'] = wave
-        self.server.game['length'] = length
-        self.server.game['difficulty'] = difficulty
+        gamemode_pat = '//dl[@id="currentGame"]' \
+                       '//dt[contains(text(), "Game type")]' \
+                       '/following-sibling::dd/@title'
+        gamemode = info_tree.xpath(gamemode_pat)[0]
+
+        if int(wave) < self.last_wave:
+            self.server.write_game_map()
+
+        self.server.game.game_map.title = map_title
+        self.server.game.game_map.name = map_name
+        self.server.game.wave = wave
+        self.server.game.length = length
+        self.server.game.difficulty = difficulty
+        self.server.game.gamemode = gamemode
 
         if int(wave) < self.last_wave:
             self.server.new_game()
