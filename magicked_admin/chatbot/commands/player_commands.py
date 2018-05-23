@@ -124,3 +124,33 @@ class CommandTopDosh(Command):
             "\t£"+str(millify(doshers[3][1])) + "\t-\t" + trim_string(doshers[3][0],20) + "\n" + \
             "\t£"+str(millify(doshers[4][1])) + "\t-\t" + trim_string(doshers[4][0],20)
         return message.encode("iso-8859-1","ignore")
+
+class CommandTime(Command):
+    def __init__(self, server, admin_only = True):
+        Command.__init__(self, server, admin_only)
+
+    def execute(self, username, args, admin):
+        if not self.authorise(admin):
+            return self.not_auth_message
+
+        #self.server.write_all_players()
+        player = self.server.get_player(username)
+
+        if player:
+            now = datetime.datetime.now()
+            elapsed_time = now - player.session_start
+            session_time = elapsed_time.total_seconds()
+            player_time = seconds_to_hhmmss(
+                player.total_time + session_time
+            )
+            pos_time = self.server.database.rank_time(username)
+
+            player_logins = self.server.player_logins(username)
+            return ("You've had a total of {} sessions (#{}), "
+                    "and spent {} on this server.").format(
+                str(player_logins),
+                str(pos_time),
+                str(player_time)
+            )
+        else:
+            return "Player not in game."
