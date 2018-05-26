@@ -20,7 +20,7 @@ from server.game_map import GameMap
 class Server:
     def __init__(self, name, address, username, password, game_password,
                  max_players, level_threshhold=0):
-      
+
         self.name = name
         self.address = address
         self.max_players = max_players
@@ -53,7 +53,7 @@ class Server:
 
         logger.debug("Server " + name + " initialised")
 
-    # This needs more clean naming? Check to see if it is fixed in other branches. 
+    # This needs more clean naming? Check to see if it is fixed in other branches.
     def new_session(self):
         login_url = "http://" + self.address + "/ServerAdmin/"
         login_payload = {
@@ -321,7 +321,7 @@ class Server:
     def change_map(self, new_map):
         map_url = "http://" + self.address + "/ServerAdmin/current/change"
         payload = {
-            "gametype": "KFGameContent.KFGameInfo_Survival",
+            "gametype": self.game.gamemode,
             "map": new_map,
             "mutatorGroupCount": "0",
             "urlextra": "?MaxPlayers={}".format(self.max_players),
@@ -341,7 +341,7 @@ class Server:
                 # Might just toss only key/id and the username for message
                 self.kick_player(player.sid, player.id, player.key)
 
-    # User player id and key are done just Need to fix the request 
+    # User player id and key are done just Need to fix the request
     def kick_player(self, sid, player_id, player_key):
         kick_url = "http://" + self.address + "/ServerAdmin/current/players"
         payload = {

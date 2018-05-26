@@ -11,8 +11,9 @@ MODE_SURVIVAL = "KFGameContent.KFGameInfo_Survival"
 MODE_WEEKLY = "KFGameContent.KFGameInfo_WeeklySurvival"
 MODE_SURVIVAL_VS = "KFGameContent.KFGameInfo_VersusSurvival"
 MODE_ENDLESS = "KFGameContent.KFGameInfo_Endless"
+MODE_CONTROLLED_DIFFICULTY = ""
 
-
+# Move timer to here?
 class Game:
     def __init__(self, game_map, gamemode):
         self.game_map = game_map

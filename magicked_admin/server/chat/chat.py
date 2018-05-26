@@ -12,6 +12,7 @@ class ChatLogger(threading.Thread):
 
     """
     def __init__(self, server):
+        # Replace with call in API
         self.chat_request_url = "http://" + server.address + \
                                 "/ServerAdmin/current/chat+data"
         self.chat_request_payload = {

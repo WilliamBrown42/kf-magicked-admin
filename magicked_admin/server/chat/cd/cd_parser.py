@@ -1,6 +1,6 @@
 
 class ParseCD:
-    def __init__
+    def __init__:
 
     def ParseWaveRecap:
         # Need to pull example wave recap messages

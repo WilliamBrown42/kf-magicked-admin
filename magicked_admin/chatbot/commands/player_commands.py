@@ -1,6 +1,18 @@
 from chatbot.commands.command import Command
 from utils.text import trim_string, millify
 
+"""
+Add commands in order of:
+- Server
+    Dosh (SING, AVG, MAX, MIN, ETC)
+    Kills (SING, AVG, MAX, MIN, ETC)
+    Health Lost (SING, AVG, MAX, MIN, ETC)
+- player
+    Dosh (SING, AVG, MAX, MIN, ETC)
+    Kills (SING, AVG, MAX, MIN, ETC)
+    Health Lost (SING, AVG, MAX, MIN, ETC)
+- Agregate
+"""
 
 class CommandServerDosh(Command):
     def __init__(self, server, admin_only=True):
