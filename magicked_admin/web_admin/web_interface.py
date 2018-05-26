@@ -304,6 +304,7 @@ class WebInterface(object):
             '//input[@checked="checked"]/@value'
         )
 
+        # Line 310 breaks in refactor, index error, likely old fixes will work
         length_val = general_settings_tree.xpath(
             '//select[@id="settings_GameLength"]' +
             '//option[@selected="selected"]/@value'

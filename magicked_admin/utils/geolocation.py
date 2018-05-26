@@ -3,6 +3,7 @@ import urllib.error
 from contextlib import closing
 import json
 
+# Expand this to state?
 def get_country(ip):
     url = "http://www.freegeoip.net/json/" + ip
     unknown = ("Unknown", "??")

@@ -1,10 +1,16 @@
+[DEFAULT]
+log_level = INFO
+game_password = 123
+max_players = 6
+motd_scoreboard = False
+scoreboard_type = dosh
+enable_greeter = False
+level_threshold = 0
+operators =
+operator_commands =
+help_text =
+
 [server_one]
 address = 127.0.0.1:8080
 username = Admin
 password = 123
-game_password = game_password
-motd_scoreboard = False
-scoreboard_type = kills
-map_autochange = False
-multiadmin_enabled = False
-

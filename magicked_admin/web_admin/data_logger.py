@@ -58,6 +58,7 @@ class DataLogger:
         elif game_now.wave > self.game.wave:
             self.__event_wave_start()
         if game_now.zeds_dead == game_now.zeds_total:
+            # This will continue to spam "!wave end" when there are no players
             self.__event_wave_end()
 
         if game_now.trader_open and not self.game.trader_open:

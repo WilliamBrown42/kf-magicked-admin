@@ -5,8 +5,9 @@ from termcolor import colored
 
 init()
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Add logger import
+#logger = logging.getLogger(__name__)
+#logger.setLevel(logging.DEBUG)
 
 
 class Listener(object):
@@ -56,9 +57,25 @@ class Chat:
 
                 self.handle_message(username, message, admin)
 
+    """
+    def handle_message(self, username, message, admin):
+
+        if self.print_messages and username != "server":
+            print_line = username + "@" + self.server.name +  ": " + message
+
+            if command:
+                print_line = colored(print_line, 'green')
+            elif username == self.server.username:
+                print_line = colored(print_line, 'white')
+            else:
+                print_line = colored(print_line, 'yellow')
+            print(print_line)
+    """
+
     def handle_message(self, username, message, admin, internal=False):
         command = True if message[0] == '!' else False
 
+        # What was internal? Just needs that and to add the colors
         if self.__print_messages and not internal:
             print_line = username + "@" + self.server_name + ": " + message
             if command:

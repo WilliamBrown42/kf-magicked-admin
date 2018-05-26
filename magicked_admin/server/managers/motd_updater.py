@@ -1,10 +1,13 @@
 from os import path
 import threading
 import requests
+import time
 
 from lxml import html
 from utils.text import millify
 from utils.text import trim_string
+from utils.logger import logger
+
 
 class MotdUpdater(threading.Thread):
 
@@ -15,16 +18,14 @@ class MotdUpdater(threading.Thread):
         self.time_interval = 5 * 60
         self.motd = self.load_motd()
 
-        self.exit_flag = threading.Event()
-
         threading.Thread.__init__(self)
-    
+
     def run(self):
-        while not self.exit_flag.wait(self.time_interval):
+        while True:
             self.server.write_all_players()
             try:
                 motd_payload = self.get_configuration()
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.RequestException:
                 continue
 
             motd = self.render_motd(self.motd)
@@ -32,61 +33,77 @@ class MotdUpdater(threading.Thread):
 
             try:
                 self.submit_motd(motd_payload)
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.RequestException:
                 continue
-                
-    def submit_motd(self, payload):
-        motd_url = "http://" + self.server.address + "/ServerAdmin/settings/welcome"
 
-        print("INFO: Updating MOTD")
+            time.sleep(self.time_interval)
+
+    def submit_motd(self, payload):
+        motd_url = "http://" + self.server.address + \
+                   "/ServerAdmin/settings/welcome"
+
+        logger.debug("Updating MOTD ({})".format(self.server.name))
         try:
             self.server.session.post(motd_url, data=payload)
             self.server.save_settings()
-        except requests.exceptions.RequestException as e:
-            print("INFO: Couldn't submit motd (RequestException)")
+        except requests.exceptions.RequestException:
+            logger.warning("Couldn't submit motd (RequestException) to {}"
+                           .format(self.server.name))
             raise
 
     def load_motd(self):
         if not path.exists(self.server.name + ".motd"):
-            print("WARNING: No motd file for " + self.server.name)
+            logger.warning("No motd file for " + self.server.name)
             return ""
- 
+
         motd_f = open(self.server.name + ".motd")
         motd = motd_f.read()
         motd_f.close()
         return motd
 
     def render_motd(self, src_motd):
-        if self.scoreboard_type in ['kills','Kills','kill','Kill']:
+        # Wouldn't this be better to do with something like fuzzy?
+        if self.scoreboard_type in ['kills', 'Kills', 'kill', 'Kill']:
             scores = self.server.database.top_kills()
         elif self.scoreboard_type in ['Dosh','dosh']:
             scores = self.server.database.top_dosh()
         else:
-            print("ERROR: Bad configuration, scoreboard_type. Options are: dosh, kills")
+            logger.error("Bad configuration, scoreboard_type. "
+                         "Options are: dosh, kills ({})"
+                         .format(self.server.name))
             return
 
         for player in scores:
-            name = player[0].replace("<","&lt;")
+            name = player[0].replace("<", "&lt;")
             name = trim_string(name, 12)
             score = player[1]
 
             src_motd = src_motd.replace("%PLR", name, 1)
             src_motd = src_motd.replace("%SCR", millify(score), 1)
-        
+
+        if "%SRV_K" in src_motd:
+            server_kills = self.server.database.server_kills()
+            src_motd = src_motd.replace("%SRV_K", millify(server_kills), 1)
+
+        if "%SRV_D" in src_motd:
+            server_dosh = self.server.database.server_dosh()
+            src_motd = src_motd.replace("%SRV_D", millify(server_dosh), 1)
+
         return src_motd
 
     def get_configuration(self):
-        motd_url = "http://" + self.server.address + "/ServerAdmin/settings/welcome"
+        motd_url = "http://" + self.server.address + \
+                   "/ServerAdmin/settings/welcome"
 
         try:
             motd_response = self.server.session.get(motd_url, timeout=2)
         except requests.exceptions.RequestException as e:
-            print("INFO: Couldn't get motd config(RequestException)")
+            logger.debug("Couldn't get motd config(RequestException)")
             raise
 
         motd_tree = html.fromstring(motd_response.content)
 
-        banner_link = motd_tree.xpath('//input[@name="BannerLink"]/@value')[0] 
+        banner_link = motd_tree.xpath('//input[@name="BannerLink"]/@value')[0]
         web_link = motd_tree.xpath('//input[@name="WebLink"]/@value')[0]
 
         return {
@@ -99,7 +116,3 @@ class MotdUpdater(threading.Thread):
                 'liveAdjust': '1',
                 'action': 'save'
         }
-    
-    
-    def terminate(self):
-        self.exit_flag.set()

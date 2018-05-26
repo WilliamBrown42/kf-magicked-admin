@@ -1,13 +1,74 @@
 from chatbot.commands.command import Command
+from utils.text import millify
+from utils.time import seconds_to_hhmmss
+from utils.logger import logger
 
-import time
 import threading
+import datetime
+import time
 
-ALL_WAVES = 99
+ALL_WAVES = 999
+
+
+class CommandGreeter(Command):
+    """
+    Player greater
+    """
+    def __init__(self, server, admin_only=True):
+        Command.__init__(self, server, admin_only)
+
+        self.new_game_grace = 35
+        self.new_game_time = datetime.datetime.now()
+
+    def execute(self, username, args, admin):
+        if not self.authorise(admin):
+            return self.not_auth_message
+
+        if args[0] == "new_game":
+            logger.debug("Greeter received new game event")
+            self.new_game_time = datetime.datetime.now()
+            return None
+        now = datetime.datetime.now()
+        elapsed_time = now - self.new_game_time
+        seconds = elapsed_time.total_seconds()
+
+        if seconds < self.new_game_grace:
+            logger.debug("Skipping welcome {}, new_game happened recently ({})"
+                         " [{}/{}]"
+                         .format(username, self.server.name, seconds,
+                                 self.new_game_grace))
+            return None
+
+        if len(args) < 2:
+            return "Missing argument (username)"
+
+        requested_username = " ".join(args[1:])
+
+        player = self.server.get_player(requested_username)
+        if not player:
+            logger.debug("DEBUG: Bad player join command (not found) [{}]"
+                         .format(requested_username))
+            return "Couldn't greet player {}.".format(requested_username)
+
+        if player.total_logins > 1:
+            pos_kills = self.server.database.rank_kills(requested_username)
+            pos_dosh = self.server.database.rank_dosh(requested_username)
+            return "\nWelcome back {}.\n" \
+                   "You've killed {} zeds (#{}) and  \n" \
+                   "earned £{} (#{}) \nover {} sessions " \
+                   "({}).".format(player.username,
+                                  millify(player.total_kills),
+                                  pos_kills,
+                                  millify(player.total_dosh),
+                                  pos_dosh,
+                                  player.total_logins,
+                                  seconds_to_hhmmss(player.total_time))\
+                .encode("iso-8859-1", "ignore")
+        else:
+            return None
 
 
 class CommandOnWave:
-    
     def __init__(self, args, wave, length, chatbot):
         if wave > 0:
             self.wave = wave
@@ -23,12 +84,12 @@ class CommandOnWave:
 
 
 class CommandOnTime(threading.Thread):
-
-    def __init__(self, args, time_interval, chatbot):
+    def __init__(self, args, time_interval, chatbot, repeat=False):
         self.exit_flag = threading.Event()
         self.args = args
         self.chatbot = chatbot
         self.time_interval = float(time_interval)
+        self.repeat = repeat
 
         threading.Thread.__init__(self)
 
@@ -36,8 +97,13 @@ class CommandOnTime(threading.Thread):
         self.exit_flag.set()
 
     def run(self):
+        if not self.repeat:
+            time.sleep(self.time_interval)
+            self.chatbot.command_handler("server", self.args, admin=True)
+            return
         while not self.exit_flag.wait(self.time_interval):
             self.chatbot.command_handler("server", self.args, admin=True)
+<<<<<<< HEAD
 
 
 class CommandOnTimeManager(Command):
@@ -47,12 +113,27 @@ class CommandOnTimeManager(Command):
         self.chatbot = chatbot
 
         Command.__init__(self, operator_list, admin)
-    
+
+=======
+
+
+class CommandOnTimeManager(Command):
+    def __init__(self, server, chatbot, admin_only = True):
+        self.command_threads = []
+        self.chatbot = chatbot
+        Command.__init__(self, server, admin_only)
+
+>>>>>>> master
     def execute(self, username, args, admin):
         if not self.authorise(admin):
             return self.not_auth_message
         if args[0] == "stop_tc":
             return self.terminate_all()
+
+        repeat = False
+        if args[1] in ["-r", "--repeat", "-R"]:
+            repeat = True
+
         if len(args) < 2:
             return "Missing argument (command)."
         try:
@@ -60,7 +141,7 @@ class CommandOnTimeManager(Command):
         except ValueError:
             return "Malformed command, \""+args[1]+"\" is not an integer."
 
-        time_command = CommandOnTime(args[2:], time, self.chatbot)
+        time_command = CommandOnTime(args[2:], time, self.chatbot, repeat)
         time_command.start()
         self.command_threads.append(time_command)
         return "Timed command started."
@@ -76,15 +157,23 @@ class CommandOnTimeManager(Command):
 
 
 class CommandOnWaveManager(Command):
+<<<<<<< HEAD
     def __init__(self, server, chatbot, admin=True):
         self.commands = []
         self.chatbot = chatbot
         Command.__init__(self, server, admin)
-       
+
+=======
+    def __init__(self, server, chatbot, admin_only = True):
+        self.commands = []
+        self.chatbot = chatbot
+        Command.__init__(self, server, admin_only)
+
+>>>>>>> master
     def execute(self, username, args, admin):
         if not self.authorise(admin):
             return self.not_auth_message
-        
+
         if args[0] == "stop_wc":
             return self.terminate_all()
         elif args[0] == "start_wc":
@@ -94,40 +183,49 @@ class CommandOnWaveManager(Command):
         elif args[0] == "new_wave":
             for command in self.commands:
                 command.new_wave(int(args[1]))
-        
+
     def terminate_all(self):
         if len(self.commands) > 0:
             self.commands = []
             return "Wave commands halted."
         else:
             return "Nothing is running."
-    
+
     def start_command(self, args):
         if len(args) < 2:
             return "Missing argument (command)."
-            
-        game_length = int(self.server.game['length'])
-        
+
+        game_length = int(self.server.game.length)
+
         try:
             wc = CommandOnWave(args[1:], int(args[0]), game_length, self.chatbot)
         except ValueError:
             wc = CommandOnWave(args, ALL_WAVES, game_length, self.chatbot)
-            
+
         self.commands.append(wc)
         return "Wave command started."
 
 
 class CommandOnTraderManager(Command):
+<<<<<<< HEAD
     def __init__(self, server, chatbot, admin=True):
         self.commands = []
         self.chatbot = chatbot
-        
+
         Command.__init__(self, server, admin)
-        
+
+=======
+    def __init__(self, server, chatbot, admin_only = True):
+        self.commands = []
+        self.chatbot = chatbot
+
+        Command.__init__(self, server, admin_only)
+
+>>>>>>> master
     def execute(self, username, args, admin):
         if not self.authorise(admin):
             return self.not_auth_message
-        
+
         if args[0] == "start_trc":
             if len(args) < 2:
                 return "Missing argument (command)."
@@ -137,15 +235,14 @@ class CommandOnTraderManager(Command):
         elif args[0] == "t_open":
             for command in self.commands:
                 self.chatbot.command_handler("server", command, admin=True)
-    
+
     def terminate_all(self):
         if len(self.commands) > 0:
             self.commands = []
             return "Trader commands stopped."
         else:
             return "Nothing is running."
-    
+
     def start_command(self, args):
         self.commands.append(args)
         return "Trader command started."
-
